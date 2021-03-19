@@ -6,6 +6,7 @@ import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
 import { Modal, Button } from 'antd';
 import 'antd/dist/antd.css';
+import {Table} from 'antd';
 
 const bottomOffset = 73
 const leftOffset = 20
@@ -14,6 +15,19 @@ let bottom = 750*0.11770063638687134 - 70
 let left = 1000*0.24561920762062073 - 12
 let w = 1000*0.2204837203025818
 let h = 750*0.45420312881469727
+
+const columns = [
+  {
+    title: 'Code',
+    dataIndex: 'code',
+    key: 'code',
+  },
+  {
+    title: 'Count',
+    dataIndex: 'count',
+    key: 'count',
+  }
+];
 
 const classes = makeStyles((theme) => ({
   root: {
@@ -25,19 +39,6 @@ const classes = makeStyles((theme) => ({
     color: theme.palette.text.secondary,
   },
 }));
-
- const showModal = () => {
-    this.setState({isModalVisible:true})
-
-  };
-
-//  const handleOk = () => {
-//      this.setState({isModalVisible:false})
-//  };
-//
-//  const handleCancel = () => {
-//     this.setState({isModalVisible:false})
-//  };
 
 class GalleryImages extends React.Component {
 
@@ -67,21 +68,23 @@ class GalleryImages extends React.Component {
        });
   }
 
-  onHideShow = (id) => {
-  // console.log("In here", id)
-     let x = document.getElementById(id);
-     console.log("In onhideshow function",id)
-     console.log(x)
-     if(x.style.display === "block")
-     {
-         console.log("I am blocked")
-         document.getElementById(x).style.border = "none"
-         }
-//     if (x.style.display === "none") {
-//          x.style.display = "block";
-//       } else {
-//         x.style.display = "none";
-//     }
+  onHideShow = (id, class_) => {
+     console.log(id, class_)
+     let x = document.getElementById(id)
+     if(class_=="box"){
+      if (x.style.border=== "none") {
+         x.style.border= "2px solid magenta";
+       } else {
+         x.style.border= "none";
+       }
+   }
+    else if(class_=="barcode"){
+        if (x.style.border=== "none") {
+                 x.style.border= "2px solid yellow";
+               } else {
+                 x.style.border= "none";
+               }
+    }
   }
 
  openModal = (id, src, dim_array) => {
@@ -91,6 +94,7 @@ class GalleryImages extends React.Component {
    let imgHeight = dim_array[0].imgSize[1] + "px"
    let image = <img id={id} src={src} style={{width:{imgWidth},height:{imgHeight}}}/>
    let arr = []
+   let counter = {}
    if(dim_array){
      dim_array.map((dim,i) =>
      {
@@ -106,28 +110,71 @@ class GalleryImages extends React.Component {
       let class_ = dim.className
       let barcode_div = <div></div>
       if(class_=="box")
-          color = "#FF00FF"
+          color = "magenta"
       else if(class_=="barcode")
-          color = "#FFFF00"
+          color = "yellow"
       console.log(bottom, left, w , h , arr)
       if(class_=="barcode")
       {
-        console.log(dim.code)
+
+
          let bottom_pos = bottom - 5
          let left_pos = left - 5
+         let code = dim.code
          barcode_div = <div style={{position:"absolute",bottom:bottom_pos+"px",
          left:left_pos+"px", width:"justify-content" , height:"10px", backgroundColor:"green", fontColor:"black",
-          fontSize:"10px"}}>{dim.code}</div>
+          fontSize:"10px"}}>{code}</div>
+          if(code !== "NA"){
+          if(counter.hasOwnProperty(code))
+          counter[code] += 1
+          else
+          counter[code] = 1
       }
-      {console.log(div_id)}
-      arr.push(<div><div id={div_id} onClick={()=>this.onHideShow(div_id)} style={{position:"absolute",bottom:bottom+"px", left:left+"px",
-       width:w+"px",height:h+"px",border:"2px solid "+ color}}/>{barcode_div}</div>)
+      }
+    if(class_==="barcode")
+      arr.push(<div><div id={div_id} onClick={()=>this.onHideShow(div_id, class_)} style={{position:"absolute",bottom:bottom+"px", left:left+"px",
+       width:w+"px",height:h+"px",zIndex: 1,border:"2px solid "+ color}}/>{barcode_div}</div>)
+       else
+       arr.push(<div><div id={div_id} onClick={()=>this.onHideShow(div_id, class_)} style={{position:"absolute",bottom:bottom+"px", left:left+"px",
+              width:w+"px",height:h+"px",border:"2px solid "+ color}}/></div>)
+
      })
 
 
    }
+   let counter_array = []
+      for(let item in counter){
+      let row =
+      {
+      "code": item,
+      "count":counter[item]
+      }
+      counter_array.push(row)
+   }
 
-   let modalContent = (<div> {image} {arr} </div>)
+
+//    for (let item in counter) {
+//      console.log('key:' + item + ' value:' + counter[item]);
+//      if(item != "NA"){
+//      rows.push(<tr>
+//       <td>{item}</td>
+//       <td>{counter[item]}</td>
+//      </tr>)
+//    }
+//    }
+    let table = <Table dataSource={counter_array} columns={columns} />
+   let modalContent = (
+   <table> <tr>
+    <td>
+   <div>
+   {image}
+    {arr}
+     </div>
+     </td>
+     <td>
+     {table}
+     </td>
+     </tr></table>)
 
    this.setState({isModalVisible:true,showModalContent:modalContent})
   };
@@ -182,7 +229,43 @@ class GalleryImages extends React.Component {
 
   }
 
+  generateView = () => {
 
+
+    let counter = {}
+    if(this.state.imageArray){
+  this.state.imageArray.map(image => {
+
+     image.data.map(dim => {
+          if(dim.className == "barcode"){
+         let code = dim.code
+         console.log("Code", code)
+           if(code !== "NA"){
+            console.log("Code in if clause", code)
+               if(counter.hasOwnProperty(code))
+               counter[code] += 1
+               else
+               counter[code] = 1
+               }
+        }
+
+     })
+
+
+
+  })
+ }
+  let counter_array = []
+        for(let item in counter){
+        let row =
+        {
+        "code": item,
+        "count":counter[item]
+        }
+        counter_array.push(row)
+     }
+  return <Table dataSource={counter_array} columns={columns} />
+  }
 
   render() {
 
@@ -193,7 +276,11 @@ class GalleryImages extends React.Component {
 //    width:w+"px",height:h+"px",border:"3px solid #FF00FF"}}/>
 //    </div>
       <div>
-     {this.state.loading? <div>"Data is loading"</div>:<div>{this.onCreateGallery()}</div>}
+     {this.state.loading? <div>"Data is loading"</div>:
+     <div>
+     {this.onCreateGallery()}
+     {this.generateView()}
+     </div>}
        <Modal width="800" title="Basic Modal" visible={this.state.isModalVisible} onOk={this.handleOk} onCancel={this.handleCancel}>
              {this.state.showModalContent}
            </Modal>
